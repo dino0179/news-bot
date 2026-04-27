@@ -5,7 +5,6 @@ import requests
 BOT_TOKEN = "8634009414:AAFUH0gzMKYdr2RglHHj3A_3GQ4GMdbfeHY"
 CHAT_ID = "46754785"
 
-# 🔗 Google + Naver RSS
 sources = [
     "https://news.google.com/rss/search?q=신천지&hl=ko&gl=KR&ceid=KR:ko",
     "https://newssearch.naver.com/search.naver?where=rss&query=신천지"
@@ -13,11 +12,19 @@ sources = [
 
 cutoff = datetime.utcnow() - timedelta(days=1)
 
-news_list = []
+politics = []
+religion = []
 
-# ---------------------------
-# 1. 수집
-# ---------------------------
+# 🔥 종교 키워드 (강하게 제한)
+religion_keywords = [
+    "신천지", "이단", "사이비", "교회", "목회", "종교", "이만희", "구원파"
+]
+
+# 🔥 정치 키워드
+politics_keywords = [
+    "정부", "국회", "여당", "야당", "정책", "대통령", "법안", "선거"
+]
+
 for url in sources:
     feed = feedparser.parse(url)
 
@@ -26,71 +33,45 @@ for url in sources:
             published = datetime(*entry.published_parsed[:6])
 
             if published >= cutoff:
+
                 title = entry.title
+                summary = entry.get("summary", "")
+                text = (title + " " + summary).lower()
+
                 link = entry.link
 
-                news_list.append({
-                    "title": title,
-                    "link": link
-                })
+                # -------------------------
+                # 1. 종교 (신천지/이단/사이비)
+                # -------------------------
+                if any(k in text for k in religion_keywords):
+                    religion.append(f"- {title}\n  {link}")
+
+                # -------------------------
+                # 2. 정치
+                # -------------------------
+                elif any(k in text for k in politics_keywords):
+                    politics.append(f"- {title}\n  {link}")
 
         except:
             continue
 
-# ---------------------------
-# 2. 중복 제거
-# ---------------------------
-seen = set()
-unique_news = []
+# -------------------------
+# 메시지 생성
+# -------------------------
+message = ""
 
-for n in news_list:
-    if n["title"] not in seen:
-        seen.add(n["title"])
-        unique_news.append(n)
+if politics:
+    message += "[정치]\n" + "\n".join(politics) + "\n\n"
 
-# ---------------------------
-# 3. 중요도 점수 (간단 룰)
-# ---------------------------
-def score(title):
-    keywords_high = ["수사", "압수", "재판", "고발", "정부", "논란"]
-    keywords_mid = ["세미나", "교회", "목회", "종교"]
+if religion:
+    message += "[종교 - 신천지/이단/사이비]\n" + "\n".join(religion) + "\n\n"
 
-    if any(k in title for k in keywords_high):
-        return 5
-    elif any(k in title for k in keywords_mid):
-        return 3
-    else:
-        return 2
+if not message:
+    message = "전날 관련 뉴스 없음"
 
-for n in unique_news:
-    n["score"] = score(n["title"])
-
-# ---------------------------
-# 4. 정렬 (중요도 순)
-# ---------------------------
-sorted_news = sorted(unique_news, key=lambda x: x["score"], reverse=True)
-
-# ---------------------------
-# 5. TOP 5
-# ---------------------------
-top_news = sorted_news[:5]
-
-# ---------------------------
-# 6. 메시지 생성
-# ---------------------------
-message = "[🔥 오늘 핵심 뉴스 TOP 5]\n\n"
-
-for i, n in enumerate(top_news, 1):
-    message += f"{i}. (중요도 {n['score']}/5)\n"
-    message += f"{n['title']}\n"
-    message += f"{n['link']}\n\n"
-
-if not top_news:
-    message = "오늘 핵심 뉴스 없음"
-
-# ---------------------------
-# 7. 전송
-# ---------------------------
+# -------------------------
+# 전송
+# -------------------------
 requests.post(
     f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
     data={
