@@ -1,23 +1,28 @@
 import feedparser
 from datetime import datetime, timedelta
 import requests
-import os
 
-BOT_TOKEN = os.environ[8634009414:AAFUH0gzMKYdr2RglHHj3A_3GQ4GMdbfeHY]
-CHAT_ID = os.environ[409793150]
+# 🔐 본인 값 넣기
+BOT_TOKEN = "8634009414:AAFUH0gzMKYdr2RglHHj3A_3GQ4GMdbfeHY"
+CHAT_ID = "409793150"
 
 url = "https://news.google.com/rss/search?q=신천지&hl=ko&gl=KR&ceid=KR:ko"
 feed = feedparser.parse(url)
 
-yesterday = datetime.now() - timedelta(days=1)
+# ⚠️ GitHub Actions는 UTC 기준이라 3일로 넉넉하게
+yesterday = datetime.now() - timedelta(days=3)
 
 results = []
-for entry in feed.entries:
-    published = datetime(*entry.published_parsed[:6])
-    if published > yesterday:
-        results.append(f"{entry.title}\n{entry.link}")
 
-text = "\n\n".join(results)
+for entry in feed.entries:
+    try:
+        published = datetime(*entry.published_parsed[:6])
+        if published > yesterday:
+            results.append(f"{entry.title}\n{entry.link}")
+    except:
+        continue
+
+text = "\n\n".join(results) if results else "최근 뉴스 없음"
 
 with open("news.txt", "w", encoding="utf-8") as f:
     f.write(text)
