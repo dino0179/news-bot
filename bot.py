@@ -3,7 +3,7 @@ from datetime import datetime
 import requests
 
 BOT_TOKEN = "8634009414:AAFUH0gzMKYdr2RglHHj3A_3GQ4GMdbfeHY"
-CHAT_ID = "409793150"
+CHAT_ID = "46754785"
 
 url = "https://news.google.com/rss/search?q=신천지&hl=ko&gl=KR&ceid=KR:ko"
 feed = feedparser.parse(url)
