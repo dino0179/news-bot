@@ -8,46 +8,51 @@ CHAT_ID = "46754785"
 url = "https://news.google.com/rss/search?q=신천지&hl=ko&gl=KR&ceid=KR:ko"
 feed = feedparser.parse(url)
 
-# 📅 전날 기준 (UTC 보정)
-today = datetime.now()
-yesterday_start = today - timedelta(days=1)
+# 📅 전날 기준 (UTC 고려해서 2일 여유)
+cutoff = datetime.now() - timedelta(days=2)
 
-results = []
+categories = {
+    "사건/논란": [],
+    "정치/사회": [],
+    "기타": []
+}
 
 for entry in feed.entries:
     try:
         published = datetime(*entry.published_parsed[:6])
 
-        # ✔ 전날 기사만 필터
-        if published >= yesterday_start:
-
+        if published >= cutoff:
             title = entry.title
             link = entry.link
 
-            # 🧠 카테고리 분류 (간단 버전)
-            if "수사" in title or "고발" in title or "재판" in title:
-                category = "사건/논란"
-            elif "정부" in title or "정치" in title:
-                category = "정치/사회"
+            # 🧠 간단 카테고리 분류
+            if any(word in title for word in ["수사", "재판", "고발", "압수", "조사"]):
+                cat = "사건/논란"
+            elif any(word in title for word in ["정부", "정치", "국회", "여당", "야당"]):
+                cat = "정치/사회"
             else:
-                category = "기타"
+                cat = "기타"
 
-            # 🧠 아주 간단한 요약 (제목 기반)
-            summary = f"{title} 관련 주요 기사입니다."
-
-            results.append(f"[{category}]\n{title}\n{summary}\n{link}\n")
+            categories[cat].append(f"- {title}\n  {link}")
 
     except:
         continue
 
-text = "\n\n".join(results) if results else "전날 기사 없음"
+# 📦 텍스트 메시지 생성
+message = ""
 
-with open("news.txt", "w", encoding="utf-8") as f:
-    f.write(text)
+for cat, items in categories.items():
+    if items:
+        message += f"[{cat}]\n" + "\n".join(items) + "\n\n"
 
-with open("news.txt", "rb") as f:
-    requests.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument",
-        data={"chat_id": CHAT_ID},
-        files={"document": f}
-    )
+if not message:
+    message = "전날 뉴스 없음"
+
+# 📲 텔레그램 전송 (파일 X, 텍스트 O)
+requests.post(
+    f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+    data={
+        "chat_id": CHAT_ID,
+        "text": message
+    }
+)
