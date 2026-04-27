@@ -1,8 +1,8 @@
-name: Run Bot
+name: News Bot
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 23 * * *'  # 한국 아침 8~9시쯤 (UTC 기준)
   workflow_dispatch:
 
 jobs:
@@ -17,11 +17,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install
         run: pip install feedparser requests
 
-      - name: Run bot
+      - name: Run
         run: python bot.py
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
