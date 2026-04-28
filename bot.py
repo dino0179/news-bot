@@ -15,12 +15,10 @@ cutoff = datetime.utcnow() - timedelta(days=1)
 politics = []
 religion = []
 
-# 🔥 종교 키워드 (강하게 제한)
 religion_keywords = [
-    "신천지", "이단", "사이비", "교회", "목회", "종교", "이만희", "구원파"
+    "신천지", "이단", "사이비", "교회", "목회", "이만희", "구원파"
 ]
 
-# 🔥 정치 키워드
 politics_keywords = [
     "정부", "국회", "여당", "야당", "정책", "대통령", "법안", "선거"
 ]
@@ -40,24 +38,15 @@ for url in sources:
 
                 link = entry.link
 
-                # -------------------------
-                # 1. 종교 (신천지/이단/사이비)
-                # -------------------------
                 if any(k in text for k in religion_keywords):
                     religion.append(f"- {title}\n  {link}")
 
-                # -------------------------
-                # 2. 정치
-                # -------------------------
                 elif any(k in text for k in politics_keywords):
                     politics.append(f"- {title}\n  {link}")
 
         except:
             continue
 
-# -------------------------
-# 메시지 생성
-# -------------------------
 message = ""
 
 if politics:
@@ -69,9 +58,6 @@ if religion:
 if not message:
     message = "전날 관련 뉴스 없음"
 
-# -------------------------
-# 전송
-# -------------------------
 requests.post(
     f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
     data={
